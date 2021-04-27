@@ -1,0 +1,44 @@
+j Main
+j Interrupt
+j Exception
+
+Main: #此处写入排序
+addi $ra $0 20
+jr $ra #退出内核态
+add $ra $0 $0
+addi $a0 $zero 4	#给出求和的项数/末项
+jal Sum
+Loop:
+beq $0 $0 Loop	#求和完后进入死循环
+Sum:
+#不断入栈至$a0=0
+addi $sp, $sp, -8	#栈的1个节点为8bit 
+sw $ra, 4($sp) 	#高4bit存$ra
+sw $a0, 0($sp) 	#低4bit存$a0
+slti $t0, $a0, 1 
+beq $t0, $zero, L1 	#在$a0=0时不跳转，此后不再走这条指令
+xor $v0, $zero, $zero 	#给$v0赋初值
+addi $sp, $sp, 8 	#由于栈底存的是0，又没有改过$ra，所以不必再读栈，直接加栈指针
+jr $ra 
+L1:
+addi $a0, $a0, -1 
+jal Sum
+#这后面都是不断出栈然后叠加，再跳到上一层
+lw $a0, 0($sp) 	#读出$a0，即此步要加的值
+lw $ra, 4($sp) 	#读出$ra，即下一步的地址
+addi $sp, $sp, 8 	#栈指针加8
+add $v0, $a0, $v0 	#$v0是最终的计算结果
+jr $ra
+
+Interrupt: #此处写入中断处理
+addi $27 $0 5
+Decent:
+blez $27 Interrupt_end
+subi $27 $27 1
+j Decent
+Interrupt_end:
+jr $26
+
+Exception: #此处写入异常处理
+beq $0 $0 Exception
+jr $26
